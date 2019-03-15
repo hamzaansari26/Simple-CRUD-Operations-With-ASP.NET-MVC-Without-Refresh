@@ -1,0 +1,243 @@
+﻿@{
+    ViewBag.Title = "Index";
+    Layout = null;
+}
+
+<script src="~/Scripts/jquery-3.0.0.js"></script>
+<script src="~/Scripts/bootstrap.js"></script>
+<link href="~/Content/bootstrap.css" rel="stylesheet" />
+@*<script src="~/Scripts/employee.js"></script>*@
+<div class="container">
+    <h2>Students Record</h2>
+    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal" onclick="clearTextBox();">Add New Student</button><br /><br />
+    <table class="table table-bordered table-hover">
+        <thead>
+            <tr>
+                <th>
+                    ID
+                </th>
+                <th>
+                    Name
+                </th>
+                <th>
+                    Email
+                </th>
+                <th>
+                    Address
+                </th>
+                <th>
+                    Actions
+                </th>
+            </tr>
+        </thead>
+        <tbody class="tbody"></tbody>
+    </table>
+
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    @*<button type="button" class="close" data-dissmiss="modal"><span aria-hidden="true">×</span></button>*@
+                    <div class="row">
+                        <div class="col-md-10">
+                            <h4 class="modal-title" id="myModalLabel">Add Student</h4>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="close" data-dismiss="modal">×</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="form-group">
+                            <label for="Age">ID</label>
+                            <input type="text" class="form-control" id="Id" placeholder="Id" readonly="readonly" />
+                        </div>
+                        <div class="form-group">
+                            <label for="Age">Name</label>
+                            <input type="text" class="form-control" id="Name" placeholder="Name" />
+                        </div>
+                        <div class="form-group">
+                            <label for="State">Email</label>
+                            <input type="text" class="form-control" id="Email" placeholder="Email" />
+                        </div>
+                        <div class="form-group">
+                            <label for="Country">Address</label>
+                            <input type="text" class="form-control" id="Address" placeholder="Address" />
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="btnAdd" onclick="Add();">Add</button>
+                    <button type="button" class="btn btn-primary" id="btnUpdate" style="display:none;" onclick="Update();">Update</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        loadData();
+    });
+    function loadData() {
+        $.ajax({
+            url: "/Students/List",
+            type: "GET",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+                var html = '';
+                $.each(result, function (key, item) {
+                    html += '<tr>';
+                    html += '<td>' + item.Id + '</td>';
+                    html += '<td>' + item.Name + '</td>';
+                    html += '<td>' + item.Email + '</td>';
+                    html += '<td>' + item.Address + '</td>';
+                    html += '<td><a href="#" onclick="return getbyID(' + item.Id + ')">Edit</a> | <a href="#" onclick="Delele(' + item.Id + ')">Delete</a></td>';
+                    html += '</tr>';
+                });
+                $('.tbody').html(html);
+            },
+            error: function (errormessage) {
+                alert(errormessage.responseText);
+            }
+        });
+    }
+
+    function Add() {
+        var res = validate();
+        if (res == false) {
+            return false;
+        }
+        //debugger;
+        var student = {
+
+            Name: $('#Name').val(),
+            Email: $('#Email').val(),
+            Address: $('#Address').val()
+        };
+        $.ajax({
+            type: "POST",
+            url: "/Students/Add",
+            data: student,
+            //contentType: "application/json;charset=utf-8",
+            //dataType: "json",
+            success: function (data) {
+                loadData();
+                $('#myModal').modal('hide');
+            },
+            error: function (errormessage) {
+                alert(errormessage.responseText);
+            }
+        });
+    }
+    function getbyID(StudentId) {
+        $('#Name').css('border-color', 'lightgrey');
+        $('#Email').css('border-color', 'lightgrey');
+        $('#Address').css('border-color', 'lightgrey');
+        $.ajax({
+            url: "/Students/GetByID/" + StudentId,
+            type: "GET",
+            contentType: "application/json;charset=UTF-8",
+            dataType: "json",
+            success: function (result) {
+                $('#Id').val(result.Id);
+                $('#Name').val(result.Name);
+                $('#City').val(result.Email);
+                $('#PhoneNo').val(result.Address);
+                $('#myModal').modal('show');
+                $('#btnUpdate').show();
+                $('#btnAdd').hide();
+            },
+            error: function (errormessage) {
+                alert(errormessage.responseText);
+            }
+        });
+        return false;
+    }
+    function Update() {
+        var res = validate();
+        if (res == false) {
+            return false;
+        }
+        var empObj = {
+            Id: $('#Id').val(),
+            Name: $('#Name').val(),
+            Email: $('#Email').val(),
+            Address: $('#Address').val()
+        };
+        $.ajax({
+            url: "/Students/Update",
+            data: JSON.stringify(empObj),
+            type: "POST",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+                loadData();
+                $('#myModal').modal('hide');
+                $('#Id').val("");
+                $('#Name').val("");
+                $('#Email').val("");
+                $('#Address').val("");
+            },
+            error: function (errormessage) {
+                alert(errormessage.responseText);
+            }
+        });
+    }
+    function Delele(ID) {
+        var ans = confirm("Are you sure you want to delete this Record?");
+        if (ans) {
+            $.ajax({
+                url: "/Students/Delete/" + ID,
+                type: "POST",
+                contentType: "application/json;charset=UTF-8",
+                dataType: "json",
+                success: function (result) {
+                    loadData();
+                },
+                error: function (errormessage) {
+                    alert(errormessage.responseText);
+                }
+            });
+        }
+    }
+    function clearTextBox() {
+        $('#Id').val("");
+        $('#Name').val("");
+        $('#Email').val("");
+        $('#Address').val("");
+        $('#btnUpdate').hide();
+        $('#btnAdd').show();
+        $('#Name').css('border-color', 'lightgrey');
+        $('#Email').css('border-color', 'lightgrey');
+        $('#Address').css('border-color', 'lightgrey');
+    }
+    function validate() {
+        var isValid = true;
+        if ($('#Name').val().trim() == "") {
+            $('#Name').css('border-color', 'Red');
+            isValid = false;
+        }
+        else {
+            $('#Name').css('border-color', 'lightgrey');
+        }
+        if ($('#Email').val().trim() == "") {
+            $('#Email').css('border-color', 'Red');
+            isValid = false;
+        }
+        else {
+            $('#Email').css('border-color', 'lightgrey');
+        }
+        if ($('#Address').val().trim() == "") {
+            $('#Address').css('border-color', 'Red');
+            isValid = false;
+        }
+        else {
+            $('#Address').css('border-color', 'lightgrey');
+        }
+        return isValid;
+    }
+</script>
